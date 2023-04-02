@@ -1,0 +1,3 @@
+[submodule "assests/chess-2d-pieces"]
+	path = assests/chess-2d-pieces
+	url = https://github.com/Adamekka/chess-2d-pieces
