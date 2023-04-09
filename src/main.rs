@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy_mod_picking::{
+    DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle, PickingCameraBundle,
+};
 
 const WINDOW_TITLE: &str = "Chess by Adamekka";
 const WINDOW_WIDTH: u16 = 1280;
@@ -15,13 +18,33 @@ fn main() {
             }),
             ..default()
         }))
+        .add_plugins(DefaultPickingPlugins)
+        .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup)
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+#[derive(Debug, Default)]
+struct SelectedSquare {
+    square: Option<Square>,
+}
+
+#[derive(Component, Debug, Default)]
+struct Square {
+    row: u8,
+    column: u8,
+}
+
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
     // Camera
-    commands.spawn(Camera2dBundle::default());
+    commands
+        .spawn(Camera2dBundle::default())
+        .insert(PickingCameraBundle::default());
 
     // Pieces
     macro_rules! load_piece {
@@ -148,9 +171,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ];
 
     // Chessboard
-    let black_material = Color::rgb(0.0, 0.0, 0.0);
-    let white_material = Color::rgb(1.0, 1.0, 1.0);
-
+    let black_material = materials.add(ColorMaterial::from(Color::rgb(0.0, 0.0, 0.0)));
+    let white_material = materials.add(ColorMaterial::from(Color::rgb(1.0, 1.0, 1.0)));
     let n_of_squares: u8 = 8;
     let square_size: f32 = 60.0;
     let piece_size: f32 = 0.06;
@@ -171,18 +193,21 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             };
 
             // Spawn square
-            commands.spawn(SpriteBundle {
-                transform: Transform {
-                    translation: square_pos.extend(0.0),
-                    scale: Vec3::new(square_size, square_size, 1.),
-                    ..default()
-                },
-                sprite: Sprite {
-                    color: *material,
-                    ..default()
-                },
-                ..default()
-            });
+            commands
+                .spawn((
+                    MaterialMesh2dBundle {
+                        transform: Transform {
+                            translation: square_pos.extend(0.0),
+                            scale: Vec3::new(square_size, square_size, 1.),
+                            ..default()
+                        },
+                        material: material.clone(),
+                        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+                        ..default()
+                    },
+                    PickableBundle::default(),
+                ))
+                .insert(Square { row, column });
 
             // Spawn piece
             commands.spawn(SpriteBundle {
