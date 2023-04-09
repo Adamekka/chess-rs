@@ -19,20 +19,147 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Camera
     commands.spawn(Camera2dBundle::default());
+
+    // Pieces
+    macro_rules! load_piece {
+        ($piece:ident) => {
+            let $piece: Handle<Image> =
+                asset_server.load(format!("chess-2d-pieces/{}.png", stringify!($piece)));
+        };
+    }
+
+    load_piece!(pawn_black);
+    load_piece!(pawn_white);
+    load_piece!(rook_black);
+    load_piece!(rook_white);
+    load_piece!(knight_black);
+    load_piece!(knight_white);
+    load_piece!(bishop_black);
+    load_piece!(bishop_white);
+    load_piece!(queen_black);
+    load_piece!(queen_white);
+    load_piece!(king_black);
+    load_piece!(king_white);
+
+    enum PieceType {
+        PawnBlack,
+        PawnWhite,
+        RookBlack,
+        RookWhite,
+        KnightBlack,
+        KnightWhite,
+        BishopBlack,
+        BishopWhite,
+        QueenBlack,
+        QueenWhite,
+        KingBlack,
+        KingWhite,
+        None,
+    }
+
+    // Array of piece positions
+    // Starts from the bottom left corner
+    // Array is row
+    // Nested array is column
+    let piece_positions: [[PieceType; 8]; 8] = [
+        [
+            PieceType::RookWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::RookBlack,
+        ],
+        [
+            PieceType::KnightWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::KnightBlack,
+        ],
+        [
+            PieceType::BishopWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::BishopBlack,
+        ],
+        [
+            PieceType::QueenWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::QueenBlack,
+        ],
+        [
+            PieceType::KingWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::KingBlack,
+        ],
+        [
+            PieceType::BishopWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::BishopBlack,
+        ],
+        [
+            PieceType::KnightWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::KnightBlack,
+        ],
+        [
+            PieceType::RookWhite,
+            PieceType::PawnWhite,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::None,
+            PieceType::PawnBlack,
+            PieceType::RookBlack,
+        ],
+    ];
+
     // Chessboard
     let black_material = Color::rgb(0.0, 0.0, 0.0);
     let white_material = Color::rgb(1.0, 1.0, 1.0);
 
     let n_of_squares: u8 = 8;
     let square_size: f32 = 60.0;
+    let piece_size: f32 = 0.06;
 
     let board_half_width = square_size * n_of_squares as f32 / 2.0;
 
     for row in 0..n_of_squares {
         for column in 0..n_of_squares {
+            let piece_type = &piece_positions[row as usize][column as usize];
             let square_pos = Vec2::new(
                 row as f32 * square_size - board_half_width + square_size / 2.0,
                 column as f32 * square_size - board_half_width + square_size / 2.0,
@@ -42,6 +169,8 @@ fn setup(mut commands: Commands) {
             } else {
                 &white_material
             };
+
+            // Spawn square
             commands.spawn(SpriteBundle {
                 transform: Transform {
                     translation: square_pos.extend(0.0),
@@ -49,8 +178,33 @@ fn setup(mut commands: Commands) {
                     ..default()
                 },
                 sprite: Sprite {
-                    color: material.clone(),
+                    color: *material,
                     ..default()
+                },
+                ..default()
+            });
+
+            // Spawn piece
+            commands.spawn(SpriteBundle {
+                transform: Transform {
+                    translation: square_pos.extend(0.0),
+                    scale: Vec3::new(piece_size, piece_size, 1.),
+                    ..default()
+                },
+                texture: match piece_type {
+                    PieceType::PawnBlack => pawn_black.clone(),
+                    PieceType::PawnWhite => pawn_white.clone(),
+                    PieceType::RookBlack => rook_black.clone(),
+                    PieceType::RookWhite => rook_white.clone(),
+                    PieceType::KnightBlack => knight_black.clone(),
+                    PieceType::KnightWhite => knight_white.clone(),
+                    PieceType::BishopBlack => bishop_black.clone(),
+                    PieceType::BishopWhite => bishop_white.clone(),
+                    PieceType::QueenBlack => queen_black.clone(),
+                    PieceType::QueenWhite => queen_white.clone(),
+                    PieceType::KingBlack => king_black.clone(),
+                    PieceType::KingWhite => king_white.clone(),
+                    PieceType::None => continue,
                 },
                 ..default()
             });
