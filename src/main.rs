@@ -63,18 +63,17 @@ enum PieceColor {
     Black,
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Clone, Copy, Component, Debug, Default)]
 struct Square {
     x: u8,
     y: u8,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 struct Piece {
     piece_type: PieceType,
     color: PieceColor,
-    x: u8,
-    y: u8,
+    square: Square,
 }
 
 fn setup(
@@ -218,10 +217,10 @@ fn setup(
                 column as f32 * square_size - board_half_width + square_size / 2.0,
                 0.,
             );
-            let material = if (row + column) % 2 == 0 {
-                &black_material
+            let (material, color) = if (row + column) % 2 == 0 {
+                (&black_material, PieceColor::Black)
             } else {
-                &white_material
+                (&white_material, PieceColor::White)
             };
 
             // Spawn square
@@ -242,29 +241,35 @@ fn setup(
                 .insert(Square { y: row, x: column });
 
             // Spawn piece
-            commands.spawn(SpriteBundle {
-                transform: Transform {
-                    translation: square_pos,
-                    scale: piece_scale,
+            commands
+                .spawn(SpriteBundle {
+                    transform: Transform {
+                        translation: square_pos,
+                        scale: piece_scale,
+                        ..default()
+                    },
+                    texture: match piece_type {
+                        PieceType::PawnBlack => pawn_black.clone(),
+                        PieceType::PawnWhite => pawn_white.clone(),
+                        PieceType::RookBlack => rook_black.clone(),
+                        PieceType::RookWhite => rook_white.clone(),
+                        PieceType::KnightBlack => knight_black.clone(),
+                        PieceType::KnightWhite => knight_white.clone(),
+                        PieceType::BishopBlack => bishop_black.clone(),
+                        PieceType::BishopWhite => bishop_white.clone(),
+                        PieceType::QueenBlack => queen_black.clone(),
+                        PieceType::QueenWhite => queen_white.clone(),
+                        PieceType::KingBlack => king_black.clone(),
+                        PieceType::KingWhite => king_white.clone(),
+                        PieceType::None => continue,
+                    },
                     ..default()
-                },
-                texture: match piece_type {
-                    PieceType::PawnBlack => pawn_black.clone(),
-                    PieceType::PawnWhite => pawn_white.clone(),
-                    PieceType::RookBlack => rook_black.clone(),
-                    PieceType::RookWhite => rook_white.clone(),
-                    PieceType::KnightBlack => knight_black.clone(),
-                    PieceType::KnightWhite => knight_white.clone(),
-                    PieceType::BishopBlack => bishop_black.clone(),
-                    PieceType::BishopWhite => bishop_white.clone(),
-                    PieceType::QueenBlack => queen_black.clone(),
-                    PieceType::QueenWhite => queen_white.clone(),
-                    PieceType::KingBlack => king_black.clone(),
-                    PieceType::KingWhite => king_white.clone(),
-                    PieceType::None => continue,
-                },
-                ..default()
-            });
+                })
+                .insert(Piece {
+                    piece_type: *piece_type,
+                    color,
+                    square: { Square { y: row, x: column } },
+                });
         }
     }
 }
