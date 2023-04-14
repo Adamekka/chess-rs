@@ -1,4 +1,7 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+};
 use bevy_mod_picking::{
     DefaultPickingPlugins, PickableBundle, PickingCameraBundle, PickingEvent, SelectionEvent,
 };
@@ -37,10 +40,41 @@ struct SelectedPiece {
     entity: Option<Entity>,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum PieceType {
+    PawnBlack,
+    PawnWhite,
+    RookBlack,
+    RookWhite,
+    KnightBlack,
+    KnightWhite,
+    BishopBlack,
+    BishopWhite,
+    QueenBlack,
+    QueenWhite,
+    KingBlack,
+    KingWhite,
+    None,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum PieceColor {
+    White,
+    Black,
+}
+
 #[derive(Component, Debug, Default)]
 struct Square {
-    row: u8,
-    column: u8,
+    x: u8,
+    y: u8,
+}
+
+#[derive(Clone, Copy)]
+struct Piece {
+    piece_type: PieceType,
+    color: PieceColor,
+    x: u8,
+    y: u8,
 }
 
 fn setup(
@@ -74,22 +108,6 @@ fn setup(
     load_piece!(queen_white);
     load_piece!(king_black);
     load_piece!(king_white);
-
-    enum PieceType {
-        PawnBlack,
-        PawnWhite,
-        RookBlack,
-        RookWhite,
-        KnightBlack,
-        KnightWhite,
-        BishopBlack,
-        BishopWhite,
-        QueenBlack,
-        QueenWhite,
-        KingBlack,
-        KingWhite,
-        None,
-    }
 
     // Array of piece positions
     // Starts from the bottom left corner
@@ -179,20 +197,26 @@ fn setup(
     ];
 
     // Chessboard
-    let black_material = materials.add(ColorMaterial::from(Color::rgb(0.0, 0.0, 0.0)));
-    let white_material = materials.add(ColorMaterial::from(Color::rgb(1.0, 1.0, 1.0)));
+    let black_material: Handle<ColorMaterial> =
+        materials.add(ColorMaterial::from(Color::rgb(0.0, 0.0, 0.0)));
+    let white_material: Handle<ColorMaterial> =
+        materials.add(ColorMaterial::from(Color::rgb(1.0, 1.0, 1.0)));
+
     let n_of_squares: u8 = 8;
     let square_size: f32 = 60.0;
     let piece_size: f32 = 0.06;
 
     let board_half_width = square_size * n_of_squares as f32 / 2.0;
+    let piece_scale: Vec3 = Vec3::new(piece_size, piece_size, 1.);
+    let square_mesh: Mesh2dHandle = meshes.add(Mesh::from(shape::Quad::default())).into();
 
     for row in 0..n_of_squares {
         for column in 0..n_of_squares {
             let piece_type = &piece_positions[row as usize][column as usize];
-            let square_pos = Vec2::new(
+            let square_pos = Vec3::new(
                 row as f32 * square_size - board_half_width + square_size / 2.0,
                 column as f32 * square_size - board_half_width + square_size / 2.0,
+                0.,
             );
             let material = if (row + column) % 2 == 0 {
                 &black_material
@@ -205,23 +229,23 @@ fn setup(
                 .spawn((
                     MaterialMesh2dBundle {
                         transform: Transform {
-                            translation: square_pos.extend(0.0),
+                            translation: square_pos,
                             scale: Vec3::new(square_size, square_size, 1.),
                             ..default()
                         },
                         material: material.clone(),
-                        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+                        mesh: square_mesh.clone(),
                         ..default()
                     },
                     PickableBundle::default(),
                 ))
-                .insert(Square { row, column });
+                .insert(Square { y: row, x: column });
 
             // Spawn piece
             commands.spawn(SpriteBundle {
                 transform: Transform {
-                    translation: square_pos.extend(0.0),
-                    scale: Vec3::new(piece_size, piece_size, 1.),
+                    translation: square_pos,
+                    scale: piece_scale,
                     ..default()
                 },
                 texture: match piece_type {
