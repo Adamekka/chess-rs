@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle, PickingCameraBundle,
+    DefaultPickingPlugins, PickableBundle, PickingCameraBundle, PickingEvent, SelectionEvent,
 };
 
 const WINDOW_TITLE: &str = "Chess by Adamekka";
@@ -18,15 +18,23 @@ fn main() {
             }),
             ..default()
         }))
+        .init_resource::<SelectedSquare>()
+        .init_resource::<SelectedPiece>()
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(DebugEventsPickingPlugin)
+        // .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup)
+        .add_system(select_square)
         .run();
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Resource)]
 struct SelectedSquare {
-    square: Option<Square>,
+    entity: Option<Entity>,
+}
+
+#[derive(Debug, Default, Resource)]
+struct SelectedPiece {
+    entity: Option<Entity>,
 }
 
 #[derive(Component, Debug, Default)]
@@ -233,6 +241,41 @@ fn setup(
                 },
                 ..default()
             });
+        }
+    }
+}
+
+fn select_square(
+    mut picking_events: EventReader<PickingEvent>,
+    mouse_button_inputs: Res<Input<MouseButton>>,
+    mut selected_square: ResMut<SelectedSquare>,
+    // mut selected_piece: ResMut<SelectedPiece>,
+    squares_query: Query<&Square>,
+) {
+    // Check if mouse is clicked
+    if !mouse_button_inputs.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    for picking_event in picking_events.iter() {
+        match picking_event {
+            PickingEvent::Selection(selection_event) => {
+                info!("Selection event");
+                if let SelectionEvent::JustSelected(selected_entity) = selection_event {
+                    if let Ok(_current_square) = squares_query.get(*selected_entity) {
+                        info!("Square selected: {:?}", selected_entity.index());
+                        selected_square.entity = Some(*selected_entity);
+                    } else {
+                        unreachable!("Deselected square event shouldn't be called");
+                        // info!("Deselected");
+                        // selected_square.entity = None;
+                        // selected_piece.entity = None;
+                        // break;
+                    }
+                }
+            }
+            PickingEvent::Hover(_) => {}
+            PickingEvent::Clicked(_) => {}
         }
     }
 }
