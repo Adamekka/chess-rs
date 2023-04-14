@@ -23,6 +23,7 @@ fn main() {
         }))
         .init_resource::<SelectedSquare>()
         .init_resource::<SelectedPiece>()
+        .init_resource::<Turn>()
         .add_plugins(DefaultPickingPlugins)
         // .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup)
@@ -74,6 +75,43 @@ struct Piece {
     piece_type: PieceType,
     color: PieceColor,
     square: Square,
+}
+
+#[derive(Resource)]
+struct Turn {
+    color: PieceColor,
+    n: u16,
+}
+
+impl Turn {
+    fn new() -> Self {
+        Self {
+            color: PieceColor::White,
+            n: 1,
+        }
+    }
+
+    fn next_turn(&mut self) {
+        self.color = match self.color {
+            PieceColor::White => PieceColor::Black,
+            PieceColor::Black => PieceColor::White,
+        };
+        self.n += 1;
+    }
+
+    fn get_turn_color(&self) -> PieceColor {
+        self.color
+    }
+
+    fn get_turn_number(&self) -> u16 {
+        self.n
+    }
+}
+
+impl Default for Turn {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 fn setup(
