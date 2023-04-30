@@ -400,10 +400,26 @@ fn setup(
                 row as f32 * square_size - board_half_width + square_size / 2.0,
                 0.,
             );
-            let (material, color) = if (column + row) % 2 == 0 {
-                (&black_material, PieceColor::Black)
+            let material = if (column + row) % 2 == 0 {
+                &black_material
             } else {
-                (&white_material, PieceColor::White)
+                &white_material
+            };
+
+            let piece_color: Option<PieceColor> = match piece_type {
+                PieceType::PawnBlack
+                | PieceType::RookBlack
+                | PieceType::KnightBlack
+                | PieceType::BishopBlack
+                | PieceType::QueenBlack
+                | PieceType::KingBlack => Some(PieceColor::Black),
+                PieceType::PawnWhite
+                | PieceType::RookWhite
+                | PieceType::KnightWhite
+                | PieceType::BishopWhite
+                | PieceType::QueenWhite
+                | PieceType::KingWhite => Some(PieceColor::White),
+                PieceType::None => None,
             };
 
             // Spawn square
@@ -450,7 +466,9 @@ fn setup(
                 })
                 .insert(Piece {
                     piece_type: *piece_type,
-                    color,
+                    color: piece_color.expect(
+                        "Piece should have a color, PieceType::None is skipped in the loop",
+                    ),
                     square: { Square { x: column, y: row } },
                     direction: { Square { x: column, y: row } },
                 });
