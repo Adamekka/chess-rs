@@ -1,3 +1,5 @@
+mod ui;
+
 use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
@@ -28,6 +30,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         // .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup)
+        .add_plugin(ui::UIPlugin)
         .add_system(select_piece)
         .add_system(select_square.before(select_piece))
         .add_system(get_piece_for_move.after(select_piece))
@@ -204,7 +207,7 @@ impl Piece {
 }
 
 #[derive(Debug, Resource)]
-struct Turn {
+pub struct Turn {
     color: PieceColor,
     n: u16,
 }
