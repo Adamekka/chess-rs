@@ -31,11 +31,11 @@ fn init_show_turn_ui_text(
                 ..default()
             },
             text: Text::from_section(
-                String::from(format!(
+                format!(
                     "Turn:  {:?}\n       {}",
                     turn.get_color(),
                     turn.get_number_as_ordinal()
-                )),
+                ),
                 TextStyle {
                     font,
                     font_size: 40.0,
@@ -56,11 +56,11 @@ fn update_turn_ui_text(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMov
     }
 
     for mut text in query.iter_mut() {
-        text.sections[0].value = String::from(format!(
+        text.sections[0].value = format!(
             "Turn:  {:?}\n       {}",
             turn.get_color(),
             turn.get_number_as_ordinal()
-        ));
+        );
         text.sections[0].style.color = match turn.get_color() {
             PieceColor::White => Color::WHITE,
             PieceColor::Black => Color::BLACK,
