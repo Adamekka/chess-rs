@@ -261,6 +261,9 @@ impl Default for Turn {
 #[derive(Component)]
 struct Captured;
 
+#[derive(Component)]
+struct Camera;
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -270,7 +273,8 @@ fn setup(
     // Camera
     commands
         .spawn(Camera2dBundle::default())
-        .insert(PickingCameraBundle::default());
+        .insert(PickingCameraBundle::default())
+        .insert(Camera);
 
     // Pieces
     macro_rules! load_piece {
@@ -520,6 +524,7 @@ fn get_piece_for_move(
     mut turn: ResMut<Turn>,
     squares_query: Query<&Square>,
     mut pieces_query: Query<(Entity, &mut Piece)>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
 ) {
     if !selected_square.is_changed() {
         return;
@@ -590,6 +595,10 @@ fn get_piece_for_move(
 
         // Change turn
         turn.next();
+
+        // Rotate camera
+        let mut camera: Mut<Transform> = camera_query.single_mut();
+        camera.rotate(Quat::from_rotation_z(std::f32::consts::PI));
 
         info!(
             "It's {:?}'s turn and it's {} turn",
