@@ -88,6 +88,11 @@ struct Piece {
 impl Piece {
     // Returns the possible moves for a piece
     fn is_move_valid(&self, new_position: Square, pieces: Vec<Piece>) -> bool {
+        // Checks if new position is same as current position
+        if new_position == self.square {
+            return false;
+        }
+
         dbg!(&self);
         dbg!(&new_position);
         // If there's a piece of the same color in the new position, return false
@@ -530,48 +535,51 @@ fn get_piece_for_move(
         info!("Piece selected: {:?}", piece.piece_type);
         info!("Square selected: {:?}", square);
 
-        if piece.is_move_valid(*square, pieces_vec) {
-            // Check if piece of the opposite color exists in this square and remove it
-            info!("Move valid");
-            for (other_entity, other_piece) in pieces_entity_vec {
-                if other_piece.square == *square && other_piece.color != piece.color {
-                    // Mark piece as captured
-                    commands.entity(other_entity).insert(Captured);
-                    dbg!(other_entity);
-                    dbg!(other_piece.square);
-                }
+        if !piece.is_move_valid(*square, pieces_vec) {
+            warn!("Move not valid");
+            return;
+        }
+
+        // Check if piece of the opposite color exists in this square and remove it
+        info!("Move valid");
+        for (other_entity, other_piece) in pieces_entity_vec {
+            if other_piece.square == *square && other_piece.color != piece.color {
+                // Mark piece as captured
+                commands.entity(other_entity).insert(Captured);
+                dbg!(other_entity);
+                dbg!(other_piece.square);
             }
+        }
 
-            dbg!(&piece);
-            dbg!(&turn);
+        dbg!(&piece);
+        dbg!(&turn);
 
-            // Continue only if it's the turn of the piece's color
-            if piece.color != turn.get_color() {
-                // Deselect piece
-                warn!("It's not {:?}'s turn", piece.color);
-                selected_square.entity = None;
-                selected_piece.entity = None;
-                return;
-            }
-
-            // Set direction for piece to move to
-            piece.direction = *square;
-            dbg!(piece);
-            dbg!(square);
-
-            // Change turn
-            turn.next();
-
-            info!(
-                "It's {:?}'s turn and it's {} turn",
-                turn.get_color(),
-                turn.get_number_as_ordinal()
-            );
-
+        // Continue only if it's the turn of the piece's color
+        if piece.color != turn.get_color() {
             // Deselect piece
+            warn!("It's not {:?}'s turn", piece.color);
             selected_square.entity = None;
             selected_piece.entity = None;
+            return;
         }
+
+        // Set direction for piece to move to
+        piece.direction = *square;
+        dbg!(piece);
+        dbg!(square);
+
+        // Change turn
+        turn.next();
+
+        info!(
+            "It's {:?}'s turn and it's {} turn",
+            turn.get_color(),
+            turn.get_number_as_ordinal()
+        );
+
+        // Deselect piece
+        selected_square.entity = None;
+        selected_piece.entity = None;
     }
 }
 
