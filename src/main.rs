@@ -233,9 +233,9 @@ impl Turn {
         self.n += 1;
     }
 
-    fn get(&self) -> (PieceColor, u16) {
-        (self.color, self.n)
-    }
+    // fn get(&self) -> (PieceColor, u16) {
+    //     (self.color, self.n)
+    // }
 
     fn get_color(&self) -> PieceColor {
         self.color
