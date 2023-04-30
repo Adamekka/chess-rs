@@ -1,6 +1,7 @@
 mod ui;
 
 use bevy::{
+    app::AppExit,
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
@@ -34,7 +35,8 @@ fn main() {
         .add_system(select_piece)
         .add_system(select_square.before(select_piece))
         .add_system(get_piece_for_move.after(select_piece))
-        .add_system(move_piece)
+        .add_system(move_piece.after(select_piece))
+        .add_system(despawn_captured_pieces.after(move_piece))
         .run();
 }
 
@@ -735,4 +737,28 @@ fn is_path_empty(start: Square, end: Square, pieces: &Vec<Piece>) -> bool {
     }
 
     true
+}
+
+fn despawn_captured_pieces(
+    mut commands: Commands,
+    mut app_exit_events: EventWriter<AppExit>,
+    query: Query<(Entity, &Piece, With<Captured>)>,
+) {
+    for (entity, piece, _) in query.iter() {
+        info!("Despawn captured piece: {:?}", entity.index());
+        if piece.piece_type == PieceType::KingWhite || piece.piece_type == PieceType::KingBlack {
+            println!("Thanks for playing!");
+            println!(
+                "{} won!",
+                match piece.color {
+                    PieceColor::White => "Black",
+                    PieceColor::Black => "White",
+                }
+            );
+            app_exit_events.send(AppExit);
+        }
+
+        // Despawn captured piece
+        commands.entity(entity).despawn_recursive();
+    }
 }
