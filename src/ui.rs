@@ -1,9 +1,11 @@
 use crate::*;
+use bevy_fps_counter::FpsCounterPlugin;
 
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init_show_ui)
+        app.add_plugin(FpsCounterPlugin)
+            .add_startup_system(init_show_ui)
             .add_system(update_turn_ui);
     }
 }
