@@ -67,6 +67,34 @@ enum PieceType {
     None,
 }
 
+trait SortPieceType {
+    fn sort(&mut self);
+}
+
+impl SortPieceType for Vec<PieceType> {
+    fn sort(&mut self) {
+        self.sort_by(|a: &PieceType, b: &PieceType| {
+            let a_idx: u8 = match a {
+                PieceType::PawnWhite | PieceType::PawnBlack => 0,
+                PieceType::KnightWhite | PieceType::KnightBlack => 1,
+                PieceType::BishopWhite | PieceType::BishopBlack => 2,
+                PieceType::RookWhite | PieceType::RookBlack => 3,
+                PieceType::QueenWhite | PieceType::QueenBlack => 4,
+                _ => 5,
+            };
+            let b_idx: u8 = match b {
+                PieceType::PawnWhite | PieceType::PawnBlack => 0,
+                PieceType::KnightWhite | PieceType::KnightBlack => 1,
+                PieceType::BishopWhite | PieceType::BishopBlack => 2,
+                PieceType::RookWhite | PieceType::RookBlack => 3,
+                PieceType::QueenWhite | PieceType::QueenBlack => 4,
+                _ => 5,
+            };
+            a_idx.cmp(&b_idx)
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum PieceColor {
     White,
