@@ -11,11 +11,7 @@ impl Plugin for UIPlugin {
 #[derive(Component)]
 struct NextMoveText;
 
-fn init_show_ui(
-    mut commands: Commands,
-    asset_server: ResMut<AssetServer>,
-    turn: Res<Turn>,
-) {
+fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn: Res<Turn>) {
     let font: Handle<Font> = asset_server.load("fonts/UbuntuMonoNerdFontCompleteMono.ttf");
 
     commands
