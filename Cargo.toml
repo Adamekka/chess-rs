@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 bevy = "0"
+bevy-fps-counter = "0"
 bevy_mod_picking = "0"
 ordinal-type = "0"

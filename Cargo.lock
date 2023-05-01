@@ -274,6 +274,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-fps-counter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3ea0f535cbe4d087df382ec28c7e54babb62980bee25c47908f1704d166902d"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1117,6 +1126,7 @@ name = "chess-rs"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-fps-counter",
  "bevy_mod_picking",
  "ordinal-type",
 ]
