@@ -3,15 +3,15 @@ use crate::*;
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init_show_turn_ui_text)
-            .add_system(update_turn_ui_text);
+        app.add_startup_system(init_show_ui)
+            .add_system(update_turn_ui);
     }
 }
 
 #[derive(Component)]
 struct NextMoveText;
 
-fn init_show_turn_ui_text(
+fn init_show_ui(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
     turn: Res<Turn>,
@@ -50,7 +50,7 @@ fn init_show_turn_ui_text(
         .insert(NextMoveText);
 }
 
-fn update_turn_ui_text(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText>>) {
+fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText>>) {
     if !turn.is_changed() {
         return;
     }
