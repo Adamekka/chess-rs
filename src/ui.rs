@@ -67,10 +67,29 @@ fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText
     }
 }
 
+/// This component is used to mark pieces that are captured on the side of the board
+#[derive(Component)]
+struct CapturedSideBoard;
+
 static mut WHITE_CAPTURED_PIECES: Vec<PieceType> = Vec::new();
 static mut BLACK_CAPTURED_PIECES: Vec<PieceType> = Vec::new();
 
-fn show_captured_pieces(captured_pieces_query: Query<&Piece, With<Captured>>) {
+/// This system shows the captured pieces on the side of the board
+fn show_captured_pieces(
+    mut commands: Commands,
+    asset_server: ResMut<AssetServer>,
+    captured_pieces_query: Query<&Piece, With<Captured>>,
+    captured_pieces_side_board_query: Query<Entity, With<CapturedSideBoard>>,
+    turn: Res<Turn>,
+) {
+    if turn.is_changed() {
+        for piece in captured_pieces_side_board_query.iter() {
+            commands.entity(piece).despawn_recursive();
+        }
+    } else {
+        return;
+    }
+
     for piece in captured_pieces_query.iter() {
         match piece.color {
             PieceColor::White => unsafe { WHITE_CAPTURED_PIECES.push(piece.piece_type) },
@@ -81,5 +100,76 @@ fn show_captured_pieces(captured_pieces_query: Query<&Piece, With<Captured>>) {
     unsafe {
         WHITE_CAPTURED_PIECES.sort();
         BLACK_CAPTURED_PIECES.sort();
+    }
+
+    macro_rules! load_piece {
+        ($piece:ident) => {
+            let $piece: Handle<Image> =
+                asset_server.load(format!("chess-2d-pieces/{}.png", stringify!($piece)));
+        };
+    }
+
+    load_piece!(pawn_black);
+    load_piece!(pawn_white);
+    load_piece!(rook_black);
+    load_piece!(rook_white);
+    load_piece!(knight_black);
+    load_piece!(knight_white);
+    load_piece!(bishop_black);
+    load_piece!(bishop_white);
+    load_piece!(queen_black);
+    load_piece!(queen_white);
+
+    let piece_scale: Vec3 = Vec3::new(0.02, 0.02, 1.);
+    let square_size: f32 = 60.;
+
+    // Rotate captured pieces when it's black's turn
+    // This is needed to be done here because this function is called every frame
+    let rotation: Quat = match turn.get_color() {
+        PieceColor::White => Quat::default(),
+        PieceColor::Black => Quat::from_rotation_z(std::f32::consts::PI),
+    };
+
+    for (i, piece) in unsafe { &WHITE_CAPTURED_PIECES }.iter().enumerate() {
+        let piece_pos: Vec3 = Vec3::new(-3.8 * square_size + i as f32 * 16., 4.2 * square_size, 0.);
+        commands
+            .spawn(SpriteBundle {
+                transform: Transform {
+                    translation: piece_pos,
+                    scale: piece_scale,
+                    rotation,
+                },
+                texture: match piece {
+                    PieceType::PawnWhite => pawn_white.clone(),
+                    PieceType::RookWhite => rook_white.clone(),
+                    PieceType::KnightWhite => knight_white.clone(),
+                    PieceType::BishopWhite => bishop_white.clone(),
+                    PieceType::QueenWhite => queen_white.clone(),
+                    _ => unreachable!("Only white pieces should be captured"),
+                },
+                ..default()
+            })
+            .insert(CapturedSideBoard);
+    }
+    for (i, piece) in unsafe { &BLACK_CAPTURED_PIECES }.iter().enumerate() {
+        let piece_pos: Vec3 = Vec3::new(3.8 * square_size - i as f32 * 16., -4.2 * square_size, 0.);
+        commands
+            .spawn(SpriteBundle {
+                transform: Transform {
+                    translation: piece_pos,
+                    scale: piece_scale,
+                    rotation,
+                },
+                texture: match piece {
+                    PieceType::PawnBlack => pawn_black.clone(),
+                    PieceType::RookBlack => rook_black.clone(),
+                    PieceType::KnightBlack => knight_black.clone(),
+                    PieceType::BishopBlack => bishop_black.clone(),
+                    PieceType::QueenBlack => queen_black.clone(),
+                    _ => unreachable!("Only black pieces should be captured"),
+                },
+                ..default()
+            })
+            .insert(CapturedSideBoard);
     }
 }
