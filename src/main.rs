@@ -37,6 +37,7 @@ fn main() {
         .add_system(get_piece_for_move.after(select_piece))
         .add_system(move_piece.after(select_piece))
         .add_system(despawn_captured_pieces.after(move_piece))
+        .add_system(promote_pieces.after(move_piece))
         .run();
 }
 
@@ -304,6 +305,9 @@ struct Captured;
 
 #[derive(Component)]
 struct RotateEachTurn;
+
+#[derive(Component)]
+struct Promoted;
 
 fn setup(
     mut commands: Commands,
@@ -592,9 +596,9 @@ fn get_piece_for_move(
             .collect::<Vec<(Entity, Piece)>>();
 
         // Move the selected piece to selected square
-        let mut piece: Mut<Piece> =
-            if let Ok((_, piece)) = pieces_query.get_mut(selected_piece_entity) {
-                piece
+        let (entity, mut piece): (Entity, Mut<Piece>) =
+            if let Ok((entity, piece)) = pieces_query.get_mut(selected_piece_entity) {
+                (entity, piece)
             } else {
                 return;
             };
@@ -605,6 +609,17 @@ fn get_piece_for_move(
         if !piece.is_move_valid(*square, pieces_vec) {
             warn!("Move not valid");
             return;
+        }
+
+        // Check if pawn is on the last row and insert it Promoted component
+        // Black
+        if piece.piece_type == PieceType::PawnBlack && square.y == 0 {
+            piece.piece_type = PieceType::QueenBlack;
+            commands.entity(entity).insert(Promoted);
+        // White
+        } else if piece.piece_type == PieceType::PawnWhite && square.y == 7 {
+            piece.piece_type = PieceType::QueenWhite;
+            commands.entity(entity).insert(Promoted);
         }
 
         // Check if piece of the opposite color exists in this square and remove it
@@ -812,5 +827,36 @@ fn despawn_captured_pieces(
 
         // Despawn captured piece
         commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn promote_pieces(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    turn: Res<Turn>,
+    mut pieces_query: Query<(&mut Handle<Image>, Entity), With<Promoted>>,
+) {
+    if !turn.is_changed() {
+        return;
+    }
+
+    info!("Promoted piece!");
+
+    // Load queen image
+    match turn.color {
+        PieceColor::White => {
+            let piece = pieces_query.get_single_mut();
+            if let Ok((mut piece, entity)) = piece {
+                *piece = asset_server.load("chess-2d-pieces/queen_white.png");
+                commands.get_entity(entity).unwrap().remove::<Promoted>();
+            }
+        }
+        PieceColor::Black => {
+            let piece = pieces_query.get_single_mut();
+            if let Ok((mut piece, entity)) = piece {
+                *piece = asset_server.load("chess-2d-pieces/queen_black.png");
+                commands.get_entity(entity).unwrap().remove::<Promoted>();
+            }
+        }
     }
 }

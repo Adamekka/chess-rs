@@ -185,7 +185,7 @@ fn show_captured_pieces(
                     PieceType::KnightWhite => knight_white.clone(),
                     PieceType::BishopWhite => bishop_white.clone(),
                     PieceType::QueenWhite => queen_white.clone(),
-                    _ => unreachable!("Only white pieces should be captured"),
+                    _ => continue,
                 },
                 ..default()
             })
@@ -211,7 +211,7 @@ fn show_captured_pieces(
                     PieceType::KnightBlack => knight_black.clone(),
                     PieceType::BishopBlack => bishop_black.clone(),
                     PieceType::QueenBlack => queen_black.clone(),
-                    _ => unreachable!("Only black pieces should be captured"),
+                    _ => continue,
                 },
                 ..default()
             })
