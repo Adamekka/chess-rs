@@ -839,13 +839,12 @@ fn promote_pieces(
         return;
     }
 
-    info!("Promoted piece!");
-
     // Load queen image
     match turn.color {
         PieceColor::White => {
             let piece = pieces_query.get_single_mut();
             if let Ok((mut piece, entity)) = piece {
+                info!("Promoted piece!");
                 *piece = asset_server.load("chess-2d-pieces/queen_white.png");
                 commands.get_entity(entity).unwrap().remove::<Promoted>();
             }
@@ -853,6 +852,7 @@ fn promote_pieces(
         PieceColor::Black => {
             let piece = pieces_query.get_single_mut();
             if let Ok((mut piece, entity)) = piece {
+                info!("Promoted piece!");
                 *piece = asset_server.load("chess-2d-pieces/queen_black.png");
                 commands.get_entity(entity).unwrap().remove::<Promoted>();
             }
