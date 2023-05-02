@@ -20,7 +20,6 @@ fn main() {
             primary_window: Some(Window {
                 title: WINDOW_TITLE.into(),
                 resolution: (WINDOW_WIDTH, WINDOW_HEIGHT).into(),
-                resizable: false,
                 ..Default::default()
             }),
             ..default()
