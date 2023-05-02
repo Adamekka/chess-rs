@@ -1,5 +1,6 @@
 use crate::*;
 use bevy_fps_counter::FpsCounterPlugin;
+use std::sync::{Mutex, MutexGuard};
 
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
@@ -7,16 +8,21 @@ impl Plugin for UIPlugin {
         app.add_plugin(FpsCounterPlugin)
             .add_startup_system(init_show_ui)
             .add_system(update_turn_ui)
-            .add_system(show_captured_pieces);
+            .add_system(show_captured_pieces)
+            .add_system(update_material_advantage_ui);
     }
 }
 
 #[derive(Component)]
 struct NextMoveText;
 
+#[derive(Component)]
+struct MaterialAdvantageText;
+
 fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn: Res<Turn>) {
     let font: Handle<Font> = asset_server.load("fonts/UbuntuMonoNerdFontCompleteMono.ttf");
 
+    // Turn
     commands
         .spawn(TextBundle {
             style: Style {
@@ -36,7 +42,7 @@ fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn:
                     turn.get_number_as_ordinal()
                 ),
                 TextStyle {
-                    font,
+                    font: font.clone(),
                     font_size: 40.0,
                     color: match turn.get_color() {
                         PieceColor::White => Color::WHITE,
@@ -47,6 +53,31 @@ fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn:
             ..default()
         })
         .insert(NextMoveText);
+
+    // Material advantage
+    commands
+        .spawn(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    bottom: Val::Px(5.0),
+                    left: Val::Px(5.0),
+                    ..default()
+                },
+                ..default()
+            },
+            text: Text::from_section(
+                "Material advantage for white: 0",
+                TextStyle {
+                    font,
+                    font_size: 20.0,
+                    color: Color::WHITE,
+                },
+            ),
+            ..default()
+        })
+        .insert(MaterialAdvantageText);
 }
 
 fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText>>) {
@@ -71,8 +102,8 @@ fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText
 #[derive(Component)]
 struct CapturedSideBoard;
 
-static mut WHITE_CAPTURED_PIECES: Vec<PieceType> = Vec::new();
-static mut BLACK_CAPTURED_PIECES: Vec<PieceType> = Vec::new();
+static mut WHITE_CAPTURED_PIECES: Mutex<Vec<PieceType>> = Mutex::new(Vec::new());
+static mut BLACK_CAPTURED_PIECES: Mutex<Vec<PieceType>> = Mutex::new(Vec::new());
 
 /// This system shows the captured pieces on the side of the board
 fn show_captured_pieces(
@@ -92,14 +123,18 @@ fn show_captured_pieces(
 
     for piece in captured_pieces_query.iter() {
         match piece.color {
-            PieceColor::White => unsafe { WHITE_CAPTURED_PIECES.push(piece.piece_type) },
-            PieceColor::Black => unsafe { BLACK_CAPTURED_PIECES.push(piece.piece_type) },
+            PieceColor::White => unsafe {
+                WHITE_CAPTURED_PIECES.lock().unwrap().push(piece.piece_type)
+            },
+            PieceColor::Black => unsafe {
+                BLACK_CAPTURED_PIECES.lock().unwrap().push(piece.piece_type)
+            },
         };
     }
 
     unsafe {
-        WHITE_CAPTURED_PIECES.sort();
-        BLACK_CAPTURED_PIECES.sort();
+        WHITE_CAPTURED_PIECES.lock().unwrap().sort();
+        BLACK_CAPTURED_PIECES.lock().unwrap().sort();
     }
 
     macro_rules! load_piece {
@@ -130,7 +165,12 @@ fn show_captured_pieces(
         PieceColor::Black => Quat::from_rotation_z(std::f32::consts::PI),
     };
 
-    for (i, piece) in unsafe { &WHITE_CAPTURED_PIECES }.iter().enumerate() {
+    for (i, piece) in unsafe { &WHITE_CAPTURED_PIECES }
+        .lock()
+        .unwrap()
+        .iter()
+        .enumerate()
+    {
         let piece_pos: Vec3 = Vec3::new(-3.8 * square_size + i as f32 * 16., 4.2 * square_size, 0.);
         commands
             .spawn(SpriteBundle {
@@ -151,7 +191,12 @@ fn show_captured_pieces(
             })
             .insert(CapturedSideBoard);
     }
-    for (i, piece) in unsafe { &BLACK_CAPTURED_PIECES }.iter().enumerate() {
+    for (i, piece) in unsafe { &BLACK_CAPTURED_PIECES }
+        .lock()
+        .unwrap()
+        .iter()
+        .enumerate()
+    {
         let piece_pos: Vec3 = Vec3::new(3.8 * square_size - i as f32 * 16., -4.2 * square_size, 0.);
         commands
             .spawn(SpriteBundle {
@@ -172,4 +217,32 @@ fn show_captured_pieces(
             })
             .insert(CapturedSideBoard);
     }
+}
+
+fn update_material_advantage_ui(
+    turn: Res<Turn>,
+    mut query: Query<&mut Text, With<MaterialAdvantageText>>,
+) {
+    if !turn.is_changed() {
+        return;
+    }
+
+    let white_captured_pieces: MutexGuard<Vec<PieceType>> =
+        unsafe { &WHITE_CAPTURED_PIECES }.lock().unwrap();
+    let black_captured_pieces: MutexGuard<Vec<PieceType>> =
+        unsafe { &BLACK_CAPTURED_PIECES }.lock().unwrap();
+
+    // Calculate material advantage
+    let material_advantage: i8 = black_captured_pieces
+        .iter()
+        .map(|piece| piece.get_value())
+        .sum::<i8>()
+        - white_captured_pieces
+            .iter()
+            .map(|piece| piece.get_value())
+            .sum::<i8>();
+
+    // Show material advantage
+    let mut text = query.single_mut();
+    text.sections[0].value = format!("Material advantage for white: {}", material_advantage);
 }

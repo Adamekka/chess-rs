@@ -95,6 +95,19 @@ impl SortPieceType for Vec<PieceType> {
     }
 }
 
+impl PieceType {
+    fn get_value(&self) -> i8 {
+        match self {
+            PieceType::PawnWhite | PieceType::PawnBlack => 1,
+            PieceType::KnightWhite | PieceType::KnightBlack => 3,
+            PieceType::BishopWhite | PieceType::BishopBlack => 3,
+            PieceType::RookWhite | PieceType::RookBlack => 5,
+            PieceType::QueenWhite | PieceType::QueenBlack => 9,
+            _ => 0,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum PieceColor {
     White,
