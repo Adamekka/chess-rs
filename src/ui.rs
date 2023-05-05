@@ -9,7 +9,8 @@ impl Plugin for UIPlugin {
             .add_startup_system(init_show_ui)
             .add_system(update_turn_ui)
             .add_system(show_captured_pieces)
-            .add_system(update_material_advantage_ui);
+            .add_system(update_material_advantage_ui)
+            .add_system(update_enable_ai_button_ui);
     }
 }
 
@@ -18,6 +19,14 @@ struct NextMoveText;
 
 #[derive(Component)]
 struct MaterialAdvantageText;
+
+#[derive(Component)]
+struct AIEnabled(bool);
+
+const AI_BUTTON_ENABLED: BackgroundColor = BackgroundColor(Color::rgb(0.35, 0.75, 0.35));
+const AI_BUTTON_ENABLED_HOVER: BackgroundColor = BackgroundColor(Color::rgb(0.45, 0.85, 0.45));
+const AI_BUTTON_DISABLED: BackgroundColor = BackgroundColor(Color::rgb(0.15, 0.15, 0.15));
+const AI_BUTTON_DISABLED_HOVER: BackgroundColor = BackgroundColor(Color::rgb(0.25, 0.25, 0.25));
 
 fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn: Res<Turn>) {
     let font: Handle<Font> = asset_server.load("fonts/UbuntuMonoNerdFontCompleteMono.ttf");
@@ -66,7 +75,7 @@ fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn:
             text: Text::from_section(
                 "Material advantage for white: 0",
                 TextStyle {
-                    font,
+                    font: font.clone(),
                     font_size: 20.0,
                     color: Color::WHITE,
                 },
@@ -74,6 +83,34 @@ fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn:
             ..default()
         })
         .insert(MaterialAdvantageText);
+
+    // AI button
+    commands
+        .spawn(ButtonBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    top: Val::Px(50.0),
+                    left: Val::Px(5.0),
+                    ..default()
+                },
+                ..default()
+            },
+            background_color: AI_BUTTON_DISABLED,
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                "AI disabled",
+                TextStyle {
+                    font,
+                    font_size: 20.0,
+                    color: Color::WHITE,
+                },
+            ));
+        })
+        .insert(AIEnabled(false));
 }
 
 fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText>>) {
@@ -237,4 +274,52 @@ fn update_material_advantage_ui(
     // Show material advantage
     let mut text = query.single_mut();
     text.sections[0].value = format!("Material advantage for white: {}", material_advantage);
+}
+
+#[allow(clippy::type_complexity)]
+fn update_enable_ai_button_ui(
+    mut interaction_query: Query<
+        (
+            &Interaction,
+            &mut BackgroundColor,
+            &Children,
+            &mut AIEnabled,
+        ),
+        (Changed<Interaction>, With<AIEnabled>),
+    >,
+    mut text_query: Query<&mut Text>,
+) {
+    for (interaction, mut color, children, mut ai_enabled) in interaction_query.iter_mut() {
+        let mut text = text_query.get_mut(children[0]).unwrap();
+        match interaction {
+            Interaction::Clicked => match ai_enabled.0 {
+                true => {
+                    color.0 = AI_BUTTON_DISABLED.0;
+                    text.sections[0].value = "AI disabled".to_string();
+                    ai_enabled.0 = false;
+                }
+                false => {
+                    color.0 = AI_BUTTON_ENABLED.0;
+                    text.sections[0].value = "AI enabled".to_string();
+                    ai_enabled.0 = true;
+                }
+            },
+            Interaction::Hovered => match ai_enabled.0 {
+                true => {
+                    color.0 = AI_BUTTON_ENABLED_HOVER.0;
+                }
+                false => {
+                    color.0 = AI_BUTTON_DISABLED_HOVER.0;
+                }
+            },
+            Interaction::None => match ai_enabled.0 {
+                true => {
+                    color.0 = AI_BUTTON_ENABLED.0;
+                }
+                false => {
+                    color.0 = AI_BUTTON_DISABLED.0;
+                }
+            },
+        }
+    }
 }
