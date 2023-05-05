@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
+use bevy_kira_audio::{AudioControl, AudioSource};
 use bevy_mod_picking::{
     DefaultPickingPlugins, PickableBundle, PickingCameraBundle, PickingEvent, SelectionEvent,
 };
@@ -28,6 +29,7 @@ fn main() {
         .init_resource::<SelectedPiece>()
         .init_resource::<Turn>()
         .add_plugins(DefaultPickingPlugins)
+        .add_plugin(bevy_kira_audio::AudioPlugin)
         // .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup)
         .add_plugin(ui::UIPlugin)
@@ -562,8 +564,11 @@ fn select_square(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn get_piece_for_move(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    audio: Res<bevy_kira_audio::Audio>,
     mut selected_square: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
     mut turn: ResMut<Turn>,
@@ -623,13 +628,25 @@ fn get_piece_for_move(
 
         // Check if piece of the opposite color exists in this square and remove it
         info!("Move valid");
+        let mut captured: bool = false;
         for (other_entity, other_piece) in pieces_entity_vec {
             if other_piece.square == *square && other_piece.color != piece.color {
                 // Mark piece as captured
                 commands.entity(other_entity).insert(Captured);
                 dbg!(other_entity);
                 dbg!(other_piece.square);
+
+                // Play capture sound
+                let sound: Handle<AudioSource> = asset_server.load("sounds/capture.mp3");
+                audio.play(sound);
+                captured = true;
             }
+        }
+
+        if !captured {
+            // Play move sound
+            let sound: Handle<AudioSource> = asset_server.load("sounds/move.mp3");
+            audio.play(sound);
         }
 
         dbg!(&piece);
