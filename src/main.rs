@@ -277,22 +277,6 @@ impl Turn {
         };
         self.n += 1;
     }
-
-    // fn get(&self) -> (PieceColor, u16) {
-    //     (self.color, self.n)
-    // }
-
-    fn get_color(&self) -> PieceColor {
-        self.color
-    }
-
-    fn get_number(&self) -> u16 {
-        self.n
-    }
-
-    fn get_number_as_ordinal(&self) -> String {
-        Ordinal(self.get_number()).to_string()
-    }
 }
 
 impl Default for Turn {
@@ -653,7 +637,7 @@ fn get_piece_for_move(
         dbg!(&turn);
 
         // Continue only if it's the turn of the piece's color
-        if piece.color != turn.get_color() {
+        if piece.color != turn.color {
             // Deselect piece
             warn!("It's not {:?}'s turn", piece.color);
             selected_square.entity = None;
@@ -676,8 +660,8 @@ fn get_piece_for_move(
 
         info!(
             "It's {:?}'s turn and it's {} turn",
-            turn.get_color(),
-            turn.get_number_as_ordinal()
+            turn.color,
+            Ordinal(turn.n)
         );
 
         // Deselect piece

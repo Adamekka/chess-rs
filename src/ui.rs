@@ -36,15 +36,11 @@ fn init_show_ui(mut commands: Commands, asset_server: ResMut<AssetServer>, turn:
                 ..default()
             },
             text: Text::from_section(
-                format!(
-                    "Turn:  {:?}\n       {}",
-                    turn.get_color(),
-                    turn.get_number_as_ordinal()
-                ),
+                format!("Turn:  {:?}\n       {}", turn.color, Ordinal(turn.n)),
                 TextStyle {
                     font: font.clone(),
                     font_size: 40.0,
-                    color: match turn.get_color() {
+                    color: match turn.color {
                         PieceColor::White => Color::WHITE,
                         PieceColor::Black => Color::BLACK,
                     },
@@ -86,12 +82,8 @@ fn update_turn_ui(turn: Res<Turn>, mut query: Query<&mut Text, With<NextMoveText
     }
 
     for mut text in query.iter_mut() {
-        text.sections[0].value = format!(
-            "Turn:  {:?}\n       {}",
-            turn.get_color(),
-            turn.get_number_as_ordinal()
-        );
-        text.sections[0].style.color = match turn.get_color() {
+        text.sections[0].value = format!("Turn:  {:?}\n       {}", turn.color, Ordinal(turn.n));
+        text.sections[0].style.color = match turn.color {
             PieceColor::White => Color::WHITE,
             PieceColor::Black => Color::BLACK,
         };
@@ -160,7 +152,7 @@ fn show_captured_pieces(
 
     // Rotate captured pieces when it's black's turn
     // This is needed to be done here because this function is called every frame
-    let rotation: Quat = match turn.get_color() {
+    let rotation: Quat = match turn.color {
         PieceColor::White => Quat::default(),
         PieceColor::Black => Quat::from_rotation_z(std::f32::consts::PI),
     };
