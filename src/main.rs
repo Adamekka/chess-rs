@@ -1,5 +1,6 @@
 mod ui;
 
+use crate::ui::*;
 use bevy::{
     app::AppExit,
     prelude::*,
@@ -39,6 +40,7 @@ fn main() {
         .add_system(move_piece.after(select_piece))
         .add_system(despawn_captured_pieces.after(move_piece))
         .add_system(promote_pieces.after(move_piece))
+        .add_system(get_pieces.after(move_piece))
         .run();
 }
 
@@ -52,7 +54,7 @@ struct SelectedPiece {
     entity: Option<Entity>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 enum PieceType {
     PawnBlack,
     PawnWhite,
@@ -66,6 +68,7 @@ enum PieceType {
     QueenWhite,
     KingBlack,
     KingWhite,
+    #[default]
     None,
 }
 
@@ -94,6 +97,130 @@ impl SortPieceType for Vec<PieceType> {
             };
             a_idx.cmp(&b_idx)
         })
+    }
+}
+
+// https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+trait ToFEN {
+    fn to_fen(&self, turn: Res<Turn>) -> String;
+}
+
+impl ToFEN for [[PieceType; 8]; 8] {
+    fn to_fen(&self, turn: Res<Turn>) -> String {
+        let mut fen: String = String::new();
+
+        for row in self.iter() {
+            let mut empty_squares: u8 = 0;
+            for piece in row.iter() {
+                match piece {
+                    PieceType::PawnWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('P');
+                    }
+                    PieceType::PawnBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('p');
+                    }
+                    PieceType::RookWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('R');
+                    }
+                    PieceType::RookBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('r');
+                    }
+                    PieceType::KnightWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('N');
+                    }
+                    PieceType::KnightBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('n');
+                    }
+                    PieceType::BishopWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('B');
+                    }
+                    PieceType::BishopBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('b');
+                    }
+                    PieceType::QueenWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('Q');
+                    }
+                    PieceType::QueenBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('q');
+                    }
+                    PieceType::KingWhite => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('K');
+                    }
+                    PieceType::KingBlack => {
+                        if empty_squares > 0 {
+                            fen.push_str(&empty_squares.to_string());
+                            empty_squares = 0;
+                        }
+                        fen.push('k');
+                    }
+                    PieceType::None => {
+                        empty_squares += 1;
+                    }
+                }
+            }
+            if empty_squares > 0 {
+                fen.push_str(&empty_squares.to_string());
+            }
+
+            fen.push('/');
+        }
+
+        // Remove last '/'
+        fen.pop();
+
+        let turn = match turn.color {
+            PieceColor::White => "w",
+            PieceColor::Black => "b",
+        };
+        // Casting and en passant are not implemented yet
+        // Don't calculate halfmove clock and fullmove number
+        fen.push_str(&format!(" {turn} ---- - 0 0"));
+
+        fen
     }
 }
 
@@ -859,4 +986,30 @@ fn promote_pieces(
             }
         }
     }
+}
+
+fn get_pieces(
+    ai_enabled_query: Query<&AIEnabled, With<AIEnabled>>,
+    pieces_query: Query<&Piece>,
+    turn: Res<Turn>,
+) {
+    if !turn.is_changed() {
+        return;
+    }
+
+    let ai_enabled = ai_enabled_query.get_single().unwrap();
+    if !ai_enabled.0 {
+        // return;
+    }
+
+    let mut pieces_pos: [[PieceType; 8]; 8] = Default::default();
+
+    for piece in pieces_query.iter() {
+        pieces_pos[(-(piece.square.y as i8) + 7) as usize][piece.square.x as usize] =
+            piece.piece_type;
+    }
+
+    dbg!(pieces_pos);
+
+    println!("Fen: {}", pieces_pos.to_fen(turn));
 }

@@ -21,7 +21,7 @@ struct NextMoveText;
 struct MaterialAdvantageText;
 
 #[derive(Component)]
-struct AIEnabled(bool);
+pub struct AIEnabled(pub bool);
 
 const AI_BUTTON_ENABLED: BackgroundColor = BackgroundColor(Color::rgb(0.35, 0.75, 0.35));
 const AI_BUTTON_ENABLED_HOVER: BackgroundColor = BackgroundColor(Color::rgb(0.45, 0.85, 0.45));
