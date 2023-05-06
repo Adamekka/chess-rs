@@ -999,7 +999,7 @@ fn get_pieces(
 
     let ai_enabled = ai_enabled_query.get_single().unwrap();
     if !ai_enabled.0 {
-        // return;
+        return;
     }
 
     let mut pieces_pos: [[PieceType; 8]; 8] = Default::default();
