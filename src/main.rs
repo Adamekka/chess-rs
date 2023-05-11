@@ -259,7 +259,7 @@ struct Piece {
 
 impl Piece {
     // Returns the possible moves for a piece
-    fn is_move_valid(&self, new_position: Square, pieces: Vec<Piece>) -> bool {
+    fn is_move_valid(&self, new_position: Square, pieces: &Vec<Piece>) -> bool {
         // Checks if new position is same as current position
         if new_position == self.square {
             return false;
@@ -268,7 +268,7 @@ impl Piece {
         dbg!(&self);
         dbg!(&new_position);
         // If there's a piece of the same color in the new position, return false
-        if color_of_piece(new_position, &pieces) == Some(self.color) {
+        if color_of_piece(new_position, pieces) == Some(self.color) {
             return false;
         }
 
@@ -288,7 +288,7 @@ impl Piece {
 
             PieceType::QueenWhite | PieceType::QueenBlack => {
                 // Queen can move any number of squares in any direction, horizontally, vertically or diagonally
-                is_path_empty(self.square, new_position, &pieces)
+                is_path_empty(self.square, new_position, pieces)
                     && ((self.square.x as i8 - new_position.x as i8).abs()
                         == (self.square.y as i8 - new_position.y as i8).abs()
                         || ((self.square.x == new_position.x && self.square.y != new_position.y)
@@ -298,7 +298,7 @@ impl Piece {
 
             PieceType::BishopWhite | PieceType::BishopBlack => {
                 // Bishop can move any number of squares diagonally
-                is_path_empty(self.square, new_position, &pieces)
+                is_path_empty(self.square, new_position, pieces)
                     && (self.square.x as i8 - new_position.x as i8).abs()
                         == (self.square.y as i8 - new_position.y as i8).abs()
             }
@@ -313,7 +313,7 @@ impl Piece {
 
             PieceType::RookWhite | PieceType::RookBlack => {
                 // Rook can move any number of squares horizontally or vertically
-                is_path_empty(self.square, new_position, &pieces)
+                is_path_empty(self.square, new_position, pieces)
                     && ((self.square.x == new_position.x && self.square.y != new_position.y)
                         || (self.square.x != new_position.x && self.square.y == new_position.y))
             }
@@ -322,7 +322,7 @@ impl Piece {
                 // 1 Square forward
                 if new_position.y as i8 - self.square.y as i8 == 1
                     && (self.square.x == new_position.x)
-                    && color_of_piece(new_position, &pieces).is_none()
+                    && color_of_piece(new_position, pieces).is_none()
                 {
                     return true;
                 }
@@ -331,8 +331,8 @@ impl Piece {
                 if self.square.y == 1
                     && new_position.y as i8 - self.square.y as i8 == 2
                     && (self.square.x == new_position.x)
-                    && is_path_empty(self.square, new_position, &pieces)
-                    && color_of_piece(new_position, &pieces).is_none()
+                    && is_path_empty(self.square, new_position, pieces)
+                    && color_of_piece(new_position, pieces).is_none()
                 {
                     return true;
                 }
@@ -340,7 +340,7 @@ impl Piece {
                 // Take piece diagonally
                 if new_position.y as i8 - self.square.y as i8 == 1
                     && (self.square.x as i8 - new_position.x as i8).abs() == 1
-                    && color_of_piece(new_position, &pieces) == Some(PieceColor::Black)
+                    && color_of_piece(new_position, pieces) == Some(PieceColor::Black)
                 {
                     return true;
                 }
@@ -352,7 +352,7 @@ impl Piece {
                 // 1 Square forward
                 if new_position.y as i8 - self.square.y as i8 == -1
                     && (self.square.x == new_position.x)
-                    && color_of_piece(new_position, &pieces).is_none()
+                    && color_of_piece(new_position, pieces).is_none()
                 {
                     return true;
                 }
@@ -361,8 +361,8 @@ impl Piece {
                 if self.square.y == 6
                     && new_position.y as i8 - self.square.y as i8 == -2
                     && (self.square.x == new_position.x)
-                    && is_path_empty(self.square, new_position, &pieces)
-                    && color_of_piece(new_position, &pieces).is_none()
+                    && is_path_empty(self.square, new_position, pieces)
+                    && color_of_piece(new_position, pieces).is_none()
                 {
                     return true;
                 }
@@ -370,7 +370,7 @@ impl Piece {
                 // Take piece diagonally
                 if new_position.y as i8 - self.square.y as i8 == -1
                     && (self.square.x as i8 - new_position.x as i8).abs() == 1
-                    && color_of_piece(new_position, &pieces) == Some(PieceColor::White)
+                    && color_of_piece(new_position, pieces) == Some(PieceColor::White)
                 {
                     return true;
                 }
@@ -721,7 +721,7 @@ fn get_piece_for_move(
         info!("Piece selected: {:?}", piece.piece_type);
         info!("Square selected: {:?}", square);
 
-        if !piece.is_move_valid(*square, pieces_vec) {
+        if !piece.is_move_valid(*square, &pieces_vec) {
             warn!("Move not valid");
             return;
         }
